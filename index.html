@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Proxium Elite</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Proxium <span>Elite</span></h1>
+      <p>Elegant Access • Discreet • Unlimited</p>
+    </header>
+
+    <div class="input-group">
+      <input type="text" id="urlInput" placeholder="Enter URL (e.g. youtube.com)" autocomplete="off"/>
+      <button onclick="proxyGo()">Enter Realm</button>
+    </div>
+
+    <div id="frameContainer">
+      <iframe id="proxyFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+    </div>
+
+    <footer>
+      <p>© 2026 Proxium Elite • Crafted in Gold</p>
+    </footer>
+  </div>
+
+  <script>
+    function proxyGo() {
+      let input = document.getElementById('urlInput').value.trim();
+      if (!input) return alert('Enter a URL');
+
+      // Auto-add https if missing
+      if (!input.startsWith('http')) input = 'https://' + input;
+
+      const frame = document.getElementById('proxyFrame');
+      frame.src = input;  // Direct load into iframe (works for many sites if no strict X-Frame-Options)
+
+      // Optional: fallback to fetch + rewrite for stricter sites (limited)
+      // fetch(input, { mode: 'cors' })
+      //   .then(r => r.text())
+      //   .then(html => {
+      //     // Basic rewrite: prefix all relative links
+      //     html = html.replace(/href=["']\/([^"']+)["']/g, 'href="$1" target="_blank"');
+      //     html = html.replace(/src=["']\/([^"']+)["']/g, 'src="$1"');
+      //     frame.contentDocument.open();
+      //     frame.contentDocument.write(html);
+      //     frame.contentDocument.close();
+      //   })
+      //   .catch(e => frame.src = input); // fallback
+    }
+
+    // Enter key support
+    document.getElementById('urlInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') proxyGo();
+    });
+  </script>
+</body>
+</html>
