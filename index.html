@@ -14,12 +14,14 @@
     </header>
 
     <div class="input-group">
-      <input type="text" id="urlInput" placeholder="Enter URL (e.g. youtube.com)" autocomplete="off"/>
+      <input type="text" id="urlInput" placeholder="Enter URL (e.g. example.com)" autocomplete="off"/>
       <button onclick="proxyGo()">Enter Realm</button>
     </div>
 
+    <div id="status" style="margin:1rem; color:#ffd700; font-size:1.2rem;"></div>
+
     <div id="frameContainer">
-      <iframe id="proxyFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+      <iframe id="proxyFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals"></iframe>
     </div>
 
     <footer>
@@ -28,31 +30,50 @@
   </div>
 
   <script>
-    function proxyGo() {
-      let input = document.getElementById('urlInput').value.trim();
-      if (!input) return alert('Enter a URL');
+    async function proxyGo() {
+      const status = document.getElementById('status');
+      const input = document.getElementById('urlInput').value.trim();
+      if (!input) return status.textContent = 'Enter a valid URL';
 
-      // Auto-add https if missing
-      if (!input.startsWith('http')) input = 'https://' + input;
+      let targetUrl = input.startsWith('http') ? input : 'https://' + input;
+      status.textContent = 'Loading elite access...';
 
       const frame = document.getElementById('proxyFrame');
-      frame.src = input;  // Direct load into iframe (works for many sites if no strict X-Frame-Options)
 
-      // Optional: fallback to fetch + rewrite for stricter sites (limited)
-      // fetch(input, { mode: 'cors' })
-      //   .then(r => r.text())
-      //   .then(html => {
-      //     // Basic rewrite: prefix all relative links
-      //     html = html.replace(/href=["']\/([^"']+)["']/g, 'href="$1" target="_blank"');
-      //     html = html.replace(/src=["']\/([^"']+)["']/g, 'src="$1"');
-      //     frame.contentDocument.open();
-      //     frame.contentDocument.write(html);
-      //     frame.contentDocument.close();
-      //   })
-      //   .catch(e => frame.src = input); // fallback
+      // Option 1: Try direct iframe (works for non-blocking sites)
+      frame.src = targetUrl;
+
+      // Wait a bit, check if blank → fallback to fetch + inject
+      setTimeout(async () => {
+        if (frame.contentDocument && frame.contentDocument.body.innerHTML === '') {
+          status.textContent = 'Direct embed blocked → using advanced bypass...';
+
+          try {
+            // Use a reliable public CORS proxy (rotate if one dies)
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+            // alt: 'https://corsproxy.io/?' + encodeURIComponent(targetUrl)
+
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Proxy fetch failed');
+
+            const html = await response.text();
+
+            // Inject into iframe
+            frame.contentDocument.open();
+            frame.contentDocument.write(html);
+            frame.contentDocument.close();
+
+            status.textContent = 'Advanced bypass complete (some features may limit)';
+          } catch (err) {
+            status.textContent = 'Bypass failed: ' + err.message + ' → Try opening in new tab or different URL';
+            window.open(targetUrl, '_blank'); // fallback open
+          }
+        } else {
+          status.textContent = 'Direct access granted';
+        }
+      }, 3000); // give direct load time to fail visibly
     }
 
-    // Enter key support
     document.getElementById('urlInput').addEventListener('keypress', e => {
       if (e.key === 'Enter') proxyGo();
     });
